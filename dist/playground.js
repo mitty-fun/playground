@@ -9,8 +9,6 @@ exports.default = void 0;
 
 var _toConsumableArray2 = _interopRequireDefault(require("@babel/runtime/helpers/esm/toConsumableArray"));
 
-var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/esm/defineProperty"));
-
 var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/esm/classCallCheck"));
 
 var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/esm/createClass"));
@@ -18,6 +16,8 @@ var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/esm/c
 var _inherits2 = _interopRequireDefault(require("@babel/runtime/helpers/esm/inherits"));
 
 var _createSuper2 = _interopRequireDefault(require("@babel/runtime/helpers/esm/createSuper"));
+
+var _defineProperty2 = _interopRequireDefault(require("@babel/runtime/helpers/esm/defineProperty"));
 
 var _react = _interopRequireDefault(require("react"));
 
@@ -29,7 +29,7 @@ var _freeSolidSvgIcons = require("@fortawesome/free-solid-svg-icons");
 
 var _playgroundModule = _interopRequireDefault(require("./playground.module.css"));
 
-var config = {
+var config = (0, _defineProperty2.default)({
   minimap: {
     enabled: false
   },
@@ -44,8 +44,10 @@ var config = {
   overviewRulerBorder: false,
   renderLineHighlight: "none",
   automaticLayout: true,
-  scrollBeyondLastLine: false
-};
+  scrollBeyondLastLine: false,
+  wordWrap: 'on',
+  wrappingStrategy: 'advanced'
+}, "overviewRulerLanes", 0);
 
 var Playground = /*#__PURE__*/function (_React$Component) {
   (0, _inherits2.default)(Playground, _React$Component);
@@ -75,14 +77,24 @@ var Playground = /*#__PURE__*/function (_React$Component) {
     };
 
     _this.consoleLog = function (text) {
+      var log = {
+        content: text,
+        type: 'text'
+      };
+
       _this.setState({
-        logs: [].concat((0, _toConsumableArray2.default)(_this.state.logs), [String(text)])
+        logs: [].concat((0, _toConsumableArray2.default)(_this.state.logs), [log])
       });
     };
 
     _this.onerror = function (error) {
+      var log = {
+        content: error,
+        type: 'error'
+      };
+
       _this.setState({
-        logs: [].concat((0, _toConsumableArray2.default)(_this.state.logs), [error])
+        logs: [].concat((0, _toConsumableArray2.default)(_this.state.logs), [log])
       });
     };
 
@@ -131,6 +143,10 @@ var Playground = /*#__PURE__*/function (_React$Component) {
         var container = _this.editorRef.current;
         var contentHeight = Math.min(500, editor.getContentHeight());
         container.style.height = "".concat(contentHeight, "px");
+        editor.layout({
+          width: container.clientWidth,
+          height: contentHeight
+        });
       };
 
       editor.onDidContentSizeChange(updateHeight);
@@ -198,10 +214,10 @@ var Playground = /*#__PURE__*/function (_React$Component) {
         class: "".concat(_playgroundModule.default.resultWrapper, " ").concat(!this.state.isShowResult && _playgroundModule.default['d-none'])
       }, /*#__PURE__*/_react.default.createElement("pre", {
         class: "".concat(_playgroundModule.default.console, " ").concat(this.state.tab !== 'console' && _playgroundModule.default['d-none'])
-      }, this.state.logs.map(function (text) {
+      }, this.state.logs.map(function (log) {
         return /*#__PURE__*/_react.default.createElement("span", {
-          class: _playgroundModule.default.print
-        }, text);
+          class: "".concat(log.type === 'error' ? _playgroundModule.default.errorlog : _playgroundModule.default.textlog)
+        }, log.content);
       })), /*#__PURE__*/_react.default.createElement("div", {
         class: this.state.tab !== 'view' && _playgroundModule.default['d-none']
       }, /*#__PURE__*/_react.default.createElement("iframe", {
