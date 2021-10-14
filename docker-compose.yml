@@ -1,0 +1,12 @@
+version: '3'
+services:
+  docs:
+    image: node:15
+    volumes:
+      - .:/usr/src/service
+    working_dir: /usr/src/service
+    command: bash -c "npm install && npm start"
+    ports:
+      - '80:3000'
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t% 
