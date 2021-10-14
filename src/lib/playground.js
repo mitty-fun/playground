@@ -22,6 +22,9 @@ const config = {
   renderLineHighlight: "none",
   automaticLayout: true,
   scrollBeyondLastLine: false,
+  wordWrap: 'on',
+  wrappingStrategy: 'advanced',
+  overviewRulerLanes: 0
 }
 class Playground extends React.Component {
 
@@ -56,11 +59,13 @@ class Playground extends React.Component {
   }
 
   consoleLog = (text) => {
-    this.setState({ logs: [...this.state.logs, String(text)] })
+    const log = { content: text, type: 'text' }
+    this.setState({ logs: [...this.state.logs, log] })
   }
 
   onerror = (error) => {
-    this.setState({ logs: [...this.state.logs, error] })
+    const log = { content: error, type: 'error' }
+    this.setState({ logs: [...this.state.logs, log] })
   }
 
   showTab = (tab) => {
@@ -98,6 +103,7 @@ class Playground extends React.Component {
       const container = this.editorRef.current
       const contentHeight = Math.min(500, editor.getContentHeight())
       container.style.height = `${contentHeight}px`
+      editor.layout({ width: container.clientWidth, height: contentHeight })
     }
     editor.onDidContentSizeChange(updateHeight)
 
@@ -129,7 +135,7 @@ class Playground extends React.Component {
         </div>
         <div class={`${styles.resultWrapper} ${!this.state.isShowResult && styles['d-none']}`}>
           <pre class={`${styles.console} ${this.state.tab !== 'console' && styles['d-none']}`}>
-            { this.state.logs.map(text => (<span class={styles.print}>{text}</span>)) }
+            { this.state.logs.map(log => (<span class={`${log.type === 'error' ? styles.errorlog : styles.textlog}`}>{log.content}</span>)) }
           </pre>
           <div class={this.state.tab !== 'view' && styles['d-none']}>
             <iframe class={styles.iframe} ref={this.iframeRef}></iframe> 

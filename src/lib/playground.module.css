@@ -56,6 +56,14 @@
   display: block;
 }
 
+.errorlog {
+  color: red;
+}
+
+.textlog {
+  color: #fff;
+}
+
 
 .btn:hover {
   box-shadow: 0px 0px 2px #999;
