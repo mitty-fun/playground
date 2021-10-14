@@ -6,20 +6,45 @@ import { faPlay, faUndo } from '@fortawesome/free-solid-svg-icons'
 
 import styles from './playground.module.css'
 
+const config = {
+  minimap: {
+    enabled: false
+  },
+  lineNumbers: 'off',
+  lineNumbersWidth: 1,
+  fontSize: 16,
+  overviewRulerLanes: 0,
+  hideCursorInOverviewRuler: true,
+  scrollbar: {
+    vertical: 'hidden'
+  },
+  overviewRulerBorder: false,
+  renderLineHighlight: "none",
+  automaticLayout: true,
+  scrollBeyondLastLine: false,
+}
 class Playground extends React.Component {
 
   constructor(props) {
+
+    let lang, tab
+    if (props.html) lang = 'html'
+    if (props.css) lang = 'css'
+    if (props.javascript) lang = 'javascript'
+
     super(props)
     this.state = {
       html: props.html || '',
       css: props.css || '',
       javascript: props.javascript || '',
-      lang: 'javascript',
+      lang,
       tab: 'console',
       logs: [],
+      isShowResult: false,
     }
 
     this.iframeRef = React.createRef()
+    this.editorRef = React.createRef()
   }
 
   handleChange = (value) => {
@@ -31,11 +56,11 @@ class Playground extends React.Component {
   }
 
   consoleLog = (text) => {
-    this.setState({ logs: [ ...this.state.logs, text] })
+    this.setState({ logs: [...this.state.logs, String(text)] })
   }
 
   onerror = (error) => {
-    this.setState({ logs: [ ...this.state.logs, error] })
+    this.setState({ logs: [...this.state.logs, error] })
   }
 
   showTab = (tab) => {
@@ -49,10 +74,15 @@ class Playground extends React.Component {
     setTimeout(() => {
       iframeWindow.document.write(html)
       iframeWindow.console.log = this.consoleLog
-      iframeWindow.onerror = this.onerror
-      iframeWindow.eval(this.state.javascript)
+      iframeWindow.onerror = function () { console.log('QAQ'); return false; }
+      try {
+        iframeWindow.eval(this.state.javascript)
+      } catch (e) {
+        this.onerror(e.message)
+      }
+      
     }, 100)
-    this.setState({ logs: [] })
+    this.setState({ logs: [], isShowResult: true })
   }
 
   reset = () => {
@@ -63,45 +93,51 @@ class Playground extends React.Component {
     })
   }
 
+  handleEditorDidMount = (editor, monaco) => {
+    const updateHeight = () => {
+      const container = this.editorRef.current
+      const contentHeight = Math.min(500, editor.getContentHeight())
+      container.style.height = `${contentHeight}px`
+    }
+    editor.onDidContentSizeChange(updateHeight)
+
+    updateHeight()
+  }
+
   render() {
     return (
       <div class={styles.root}>
-        <div class={styles.tabs}>
-          <span class={styles['tabs-item']} onClick={() => this.setLang('html')}>HTML</span>
-          <span class={styles['tabs-item']} onClick={() => this.setLang('css')}>CSS</span>
-          <span class={styles['tabs-item']} onClick={() => this.setLang('javascript')}>JavaScript</span>
-          <span class={styles['tabs-item']} onClick={this.run}>
-            <FontAwesomeIcon icon={faPlay} />
-          </span>
-          <span class={styles['tabs-item']} onClick={this.reset}>
-            <FontAwesomeIcon icon={faUndo} />
-          </span>
-        </div>
-        <div className={styles.editor}>
-            <Editor
-              language={this.state.lang}
-              value={this.state[this.state.lang]}
-              onChange={this.handleChange}
-              options={{
-                minimap: {
-                  enabled: false
-                },
-                fontSize: 16
-              }}
-            />
-        </div>
-        <div>
-          <div class={styles.tabs}>
-            <span class={styles['tabs-item']} onClick={() => this.showTab('console')}>console</span>
-            <span class={styles['tabs-item']} onClick={() => this.showTab('view')}>view</span>
+        <div class={styles.editorWrapper} ref={this.editorRef}>
+          <Editor
+            language={this.state.lang}
+            value={this.state[this.state.lang]}
+            onChange={this.handleChange}
+            options={config}
+            onMount={this.handleEditorDidMount}
+          />
+          <div class={styles.languages}>
+            {this.props.html && <span class={`${styles.btn} ${this.state.lang === 'html' && styles.active}`} onClick={() => this.setLang('html')}>HTML</span>}
+            {this.props.css && <span class={`${styles.btn} ${this.state.lang === 'css' && styles.active}`} onClick={() => this.setLang('css')}>CSS</span>}
+            {this.props.javascript && <span class={`${styles.btn} ${this.state.lang === 'javascript' && styles.active}`} onClick={() => this.setLang('javascript')}>JS</span>}
+            <span class={styles.btn} onClick={this.run}>
+              <FontAwesomeIcon icon={faPlay} />
+            </span>
+            <span class={styles.btn} onClick={this.reset}>
+              <FontAwesomeIcon icon={faUndo} />
+            </span>
           </div>
-          <div class={styles.content}>
-            <div class={this.state.tab === 'view' ? styles['d-none'] : ''}>
-              <iframe class={styles.iframe} ref={this.iframeRef}></iframe> 
-            </div>
-            <div class={this.state.tab === 'console' ? styles['d-none'] : ''}>
-              { this.state.logs.map(text => (<p>{text}</p>)) }
-            </div>
+        </div>
+        <div class={`${styles.resultWrapper} ${!this.state.isShowResult && styles['d-none']}`}>
+          <pre class={`${styles.console} ${this.state.tab !== 'console' && styles['d-none']}`}>
+            { this.state.logs.map(text => (<span class={styles.print}>{text}</span>)) }
+          </pre>
+          <div class={this.state.tab !== 'view' && styles['d-none']}>
+            <iframe class={styles.iframe} ref={this.iframeRef}></iframe> 
+          </div>
+
+          <div class={styles.languages}>
+            {this.props.javascript && <span class={`${styles.btn} ${this.state.tab === 'console' && styles.active}`} onClick={() => this.showTab('console')}>Console</span>}
+            {this.props.html && <span class={`${styles.btn} ${this.state.tab === 'view' && styles.active}`} onClick={() => this.showTab('view')}>View</span>}
           </div>
         </div>
       </div>
